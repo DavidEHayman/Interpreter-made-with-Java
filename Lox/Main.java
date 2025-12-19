@@ -60,6 +60,6 @@ public class Main {
     }
 
     private static void report(int line, String where, String message) {
-        System.out.println("[line " + line + "Error " + where + ": " + message);
+        System.out.println("[line " + line + "] " + "Error " + where + ": " + message);
     }
 }

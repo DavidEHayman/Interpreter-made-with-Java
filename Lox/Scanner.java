@@ -81,6 +81,8 @@ public class Scanner {
                 while(peek() != '\n' && !isAtEnd()){
                     advance();
                 }
+            } else if(match('*')){
+                comment();
             } else {
                 addToken(SLASH);
             }
@@ -159,6 +161,21 @@ public class Scanner {
 
     private boolean isDigit(char num){
         return num <= '9' && num >= '0';
+    }
+
+    private void comment() {
+        while(!isAtEnd()){
+            if(peek() == '\n') line++;
+            
+            if(peek() == '*' && Nextpeek() == '/'){
+                advance();
+                advance();
+
+                return;
+            }
+            advance();
+        }
+        Main.error(line, "Unclosed comment");
     }
 
     private void number() {
