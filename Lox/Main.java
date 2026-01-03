@@ -1,4 +1,5 @@
 package Lox;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -7,17 +8,17 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
 
-
 public class Main {
     static boolean hadError = false;
-    public static void main(String[] args) throws IOException{
-        if(args.length > 1) {
+
+    public static void main(String[] args) throws IOException {
+        if (args.length > 1) {
             System.out.println("Too many arguments provided.");
-        } else if(args.length == 1) {
+        } else if (args.length == 1) {
             runFile(args[0]);
-        } else{
+        } else {
             runPrompt();
-            
+
         }
     }
 
@@ -26,37 +27,53 @@ public class Main {
 
         run(new String(bytes, Charset.defaultCharset()));
 
-        if(hadError) {
+        if (hadError) {
             System.exit(65);
         }
     }
-    private static void runPrompt() throws IOException{
+
+    private static void runPrompt() throws IOException {
         InputStreamReader input = new InputStreamReader(System.in);
         BufferedReader reader = new BufferedReader(input);
 
-        for(;;) {
+        for (;;) {
             System.out.print("> ");
             String line = reader.readLine();
-            if(line == null) {
+            if (line == null) {
                 break;
             }
             run(line);
             hadError = false;
         }
-        
+
     }
-    private static void run (String source) {
+
+    private static void run(String source) {
         Scanner scanner = new Scanner(source);
         List<Token> tokens = scanner.scanTokens();
 
-        //For debugging of scanner, print out the List of tokens to ensure scanner is working properly
-        for(Token token : tokens) {
-            System.out.println(token);
-        }
+        // For debugging of scanner, print out the List of tokens to ensure scanner is
+        // working properly
+        Parser parser = new Parser(tokens);
+        Expr expression = parser.parse();
+
+        // Stop if there was a syntax error.
+        if (hadError)
+            return;
+
+        System.out.println(new AstPrinter().print(expression));
     }
 
-    static void error (int line, String message) {
+    static void error(int line, String message) {
         report(line, "", message);
+    }
+
+    static void error(Token token, String message) {
+        if (token.type == TokenType.EOF) {
+            report(token.line, " at end", message);
+        } else {
+            report(token.line, " at '" + token.lexeme + "'", message);
+        }
     }
 
     private static void report(int line, String where, String message) {
