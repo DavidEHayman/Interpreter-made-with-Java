@@ -15,9 +15,11 @@ public class Parser {
         this.tokens = tokens;
     }
 
+    /* ======== ABSTRACT SYNTAX TREE ======== */
+
     Expr parse() {
         try {
-            return expression();
+            return expression(); // AST
         } catch (ParseError error) {
             return null;
         }
@@ -29,7 +31,7 @@ public class Parser {
 
     private Expr equality() {
 
-        Expr expr = comparison();
+        Expr expr = comparison(); // AST
         while (match(BANG_EQUAL, BANG)) {
             Token operator = previous();
             Expr right = comparison();
@@ -40,7 +42,7 @@ public class Parser {
     }
 
     private Expr comparison() {
-        Expr expr = term();
+        Expr expr = term(); // AST
 
         while (match(GREATER, GREATER_EQUAL, LESS, LESS_EQUAL)) {
             Token operator = previous();
@@ -50,15 +52,61 @@ public class Parser {
         return expr;
     }
 
-    private boolean match(TokenType... types) {
-        for (TokenType type : types) {
-            if (check(type)) {
-                advance();
-                return true;
-            }
+        private Expr term() {
+        Expr expr = factor(); // AST
+
+        while (match(MINUS, PLUS)) {
+            Token operator = previous();
+            Expr right = factor();
+            expr = new Expr.Binary(expr, operator, right);
         }
-        return false;
+
+        return expr;
     }
+
+    private Expr factor() {
+        Expr expr = unary(); // AST
+
+        while (match(SLASH, STAR)) {
+            Token operator = previous();
+            Expr right = unary();
+            expr = new Expr.Binary(expr, operator, right);
+        }
+        return expr;
+
+    }
+
+    private Expr unary() {
+        if (match(BANG, MINUS)) {
+            Token operator = previous();
+            Expr right = unary();
+
+            return new Expr.Unary(operator, right);
+        }
+        return primary();  // AST
+    }
+
+    private Expr primary() {
+        if (match(FALSE))
+            return new Expr.Literal(false);
+        if (match(TRUE))
+            return new Expr.Literal(true);
+        if (match(NIL))
+            return new Expr.Literal(null);
+
+        if (match(NUMBER, STRING)) {
+            return new Expr.Literal(previous().literal);
+        }
+
+        if (match(LEFT_PAREN)) {
+            Expr expr = expression();
+            consume(RIGHT_PAREN, "Expect ')' after expression.");
+            return new Expr.Grouping(expr);
+        }
+        throw error(peek(), "Expect expression.");
+    }
+
+    /* ========= ALL TOKEN CHECKS ========= */
 
     private Token consume(TokenType type, String message) {
         if (check(type))
@@ -88,13 +136,25 @@ public class Parser {
                 case PRINT:
                 case RETURN:
                     return;
+                default:
+                    break;
             }
 
             advance();
         }
     }
 
-    private boolean check(TokenType type) {
+        private boolean match(TokenType... types) {
+        for (TokenType type : types) {
+            if (check(type)) {
+                advance();
+                return true;
+            }
+        }
+        return false;
+    }
+
+        private boolean check(TokenType type) {
         if (isAtEnd())
             return false;
         return peek().type == type;
@@ -116,59 +176,5 @@ public class Parser {
 
     private Token previous() {
         return tokens.get(current - 1);
-    }
-
-    private Expr term() {
-        Expr expr = factor();
-
-        while (match(MINUS, PLUS)) {
-            Token operator = previous();
-            Expr right = factor();
-            expr = new Expr.Binary(expr, operator, right);
-        }
-
-        return expr;
-    }
-
-    private Expr factor() {
-        Expr expr = unary();
-
-        while (match(SLASH, STAR)) {
-            Token operator = previous();
-            Expr right = unary();
-            expr = new Expr.Binary(expr, operator, right);
-        }
-        return expr;
-
-    }
-
-    private Expr unary() {
-        if (match(BANG, MINUS)) {
-            Token operator = previous();
-            Expr right = unary();
-
-            return new Expr.Unary(operator, right);
-        }
-        return primary();
-    }
-
-    private Expr primary() {
-        if (match(FALSE))
-            return new Expr.Literal(false);
-        if (match(TRUE))
-            return new Expr.Literal(true);
-        if (match(NIL))
-            return new Expr.Literal(null);
-
-        if (match(NUMBER, STRING)) {
-            return new Expr.Literal(previous().literal);
-        }
-
-        if (match(LEFT_PAREN)) {
-            Expr expr = expression();
-            consume(RIGHT_PAREN, "Expect ')' after expression.");
-            return new Expr.Grouping(expr);
-        }
-        throw error(peek(), "Expect expression.");
     }
 }

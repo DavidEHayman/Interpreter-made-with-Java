@@ -10,6 +10,9 @@ import java.util.List;
 
 public class Main {
     static boolean hadError = false;
+    static boolean hadRuntimeError = false;
+
+    private static final Interpreter interpreter = new Interpreter();
 
     public static void main(String[] args) throws IOException {
         if (args.length > 1) {
@@ -30,6 +33,9 @@ public class Main {
         if (hadError) {
             System.exit(65);
         }
+        if(hadRuntimeError) {
+            System.exit(70);
+        }
     }
 
     private static void runPrompt() throws IOException {
@@ -48,6 +54,11 @@ public class Main {
 
     }
 
+    static void runtimeError(RuntimeError error) {
+        System.err.println(error.getMessage() + "\n[line " + error.token.line + "]");
+        hadRuntimeError = true;
+    }
+
     private static void run(String source) {
         Scanner scanner = new Scanner(source);
         List<Token> tokens = scanner.scanTokens();
@@ -61,7 +72,8 @@ public class Main {
         if (hadError)
             return;
 
-        System.out.println(new AstPrinter().print(expression));
+        //System.out.println(new AstPrinter().print(expression));
+        interpreter.interpret(expression);
     }
 
     static void error(int line, String message) {
